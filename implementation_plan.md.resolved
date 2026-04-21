@@ -1,0 +1,39 @@
+# ShopScheduler V2 Implementation Plan
+
+This major overhaul transforms the application into an advanced, high-tech industrial dashboard with dark/neon themes, REST API, complex scheduling logs, and animated UI.
+
+## Proposed Changes
+
+### Configuration
+- **Dependencies**: Install `weasyprint`, `kaleido`, `djangorestframework`, `channels`, `openpyxl`.
+- **Settings**: Update `INSTALLED_APPS` with `rest_framework` and configure static directories.
+
+### Models ([models.py](file:///C:/Users/hajar/.gemini/antigravity/scratch/ShopScheduler/scheduler_app/models.py))
+- **Planning**: Tracks algorithm, date, makespan, taux_retard.
+- **PlanningOperation**: The instance of an operation within a specific `Planning`.
+- **Alert**: Tracks alerts with severity.
+- **MachineStatus**: OneToOne with Machine, with status and load.
+- **MaintenanceSlot**: For downtime.
+- **ScheduleComparison**: Comparing two plannings.
+- **Contrainte**: Enhanced with new types and JSON field.
+
+### Logic & Services
+- **Scheduler ([scheduler.py](file:///C:/Users/hajar/.gemini/antigravity/scratch/ShopScheduler/scheduler_app/scheduler.py))**: A class capturing state, validating constraints, running SPT/EDD/FIFO/Johnson, and saving results to `Planning` instances.
+- **Gantt ([gantt.py](file:///C:/Users/hajar/.gemini/antigravity/scratch/ShopScheduler/scheduler_app/gantt.py))**: Rewrite via `plotly.graph_objects`, adding menus, custom hover data, and optional comparison traces.
+
+### Views & API ([views.py](file:///C:/Users/hajar/.gemini/antigravity/scratch/ShopScheduler/scheduler_app/views.py) & `api/`)
+- Advanced Dashboard with Chart.js.
+- History / Compare views for plannings.
+- DRF ViewSets under `/api/`.
+- WeasyPrint PDF export view for Gantt.
+
+### Design / Frontend
+- `static/css/style.css`: Background `#0a0e1a`, Sidebar `#0d1117`, Cyan `#00d4ff`, Purple `#7c3aed`.
+- Transitions and hover effects. Responsive Bootstrap 5 dark theme applied globally.
+
+## Verification Plan
+1. Apply migrations to SQLite (or Postgres if configured).
+2. Create baseline test data (Jobs, Machines, Operations).
+3. Validate that standard views load styles without 404.
+4. Execute full scheduler pass to ensure `Planning` creation.
+5. Export Gantt as PDF to verify `weasyprint` binding.

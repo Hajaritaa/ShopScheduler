@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Gantt ({{ algo }}) - ShopScheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Diagramme de Gantt <span class="badge bg-primary fs-6">Algo : {{ algo }}</span></h2>
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Exporter
+        PDF/PNG</button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <!-- Conteneur Plotly injecté -->
+        {{ plot_html|safe }}
+    </div>
+</div>
+{% endblock %}

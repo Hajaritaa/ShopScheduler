@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShopScheduler - Ordonnancement{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { min-height: 100vh; background-color: #212529; color: white; }
+        .sidebar a { color: #adb5bd; text-decoration: none; display: block; padding: 10px 15px; }
+        .sidebar a:hover { color: white; background-color: #343a40; border-radius: 4px; }
+        .content { padding: 20px; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar p-3" style="width: 250px;">
+            <h4>ShopScheduler</h4>
+            <hr>
+            <ul class="nav flex-column mb-auto">
+                <li class="nav-item"><a href="{% url 'dashboard' %}" class="nav-link">Tableau de bord</a></li>
+                <li class="nav-item"><a href="{% url 'job_list' %}" class="nav-link">Jobs</a></li>
+                <li class="nav-item"><a href="{% url 'machine_list' %}" class="nav-link">Machines</a></li>
+                <li class="nav-item"><a href="{% url 'constraints_list' %}" class="nav-link">Contraintes & Statuts</a></li>
+                <li class="nav-item mt-4">
+                    <form action="{% url 'schedule_view' %}" method="get">
+                        <select name="algo" class="form-select form-select-sm mb-2">
+                            <option value="SPT">SPT (Shortest Process Time)</option>
+                            <option value="EDD">EDD (Earliest Due Date)</option>
+                            <option value="FIFO">FIFO</option>
+                            <option value="JOHNSON">Johnson (Flow Shop 2M)</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Générer Planning</button>
+                    </form>
+                </li>
+                <li class="nav-item mt-2"><a href="{% url 'gantt_view' %}" class="nav-link btn btn-outline-success text-success bg-dark">Voir Diagramme de Gantt</a></li>
+            </ul>
+        </div>
+
+        <!-- Main content -->
+        <div class="content flex-grow-1">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

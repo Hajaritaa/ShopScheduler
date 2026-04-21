@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Opérations du Job {{ job.nom }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'job_list' %}" class="btn btn-outline-secondary btn-sm">&laquo; Retour aux jobs</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <h3>Opérations pour : <span class="text-primary">{{ job.nom }}</span></h3>
+        <table class="table table-bordered mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Ordre</th>
+                    <th>Machine</th>
+                    <th>Setup (min)</th>
+                    <th>Durée (min)</th>
+                    <th>Début planifié</th>
+                    <th>Fin planifiée</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in job.operations.all %}
+                <tr>
+                    <td>{{ op.ordre }}</td>
+                    <td>{{ op.machine.nom }}</td>
+                    <td>{{ op.duree_preparation }}</td>
+                    <td>{{ op.duree_execution }}</td>
+                    <td>{{ op.start_time|date:"d/m/Y H:i"|default:"-" }}</td>
+                    <td>{{ op.end_time|date:"d/m/Y H:i"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Aucune opération pour ce job.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-info">
+            <div class="card-header bg-info text-dark">Ajouter une opération</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Ajouter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Contraintes & Statuts - ShopScheduler{% endblock %}
+
+{% block content %}
+<h2>Statut des Jobs et Contraintes</h2>
+
+<!-- Filters -->
+<div class="card mb-4 mt-3 bg-light">
+    <div class="card-body py-2">
+        <form method="get" class="row gx-3 gy-2 align-items-center">
+            <div class="col-sm-3">
+                <label>Machine</label>
+                <select name="machine" class="form-select form-select-sm">
+                    <option value="">Toutes</option>
+                    {% for m in machines %}
+                    <option value="{{ m.id }}" {% if machine_val==m.id|stringformat:"s" %}selected{% endif %}>{{ m.nom
+                        }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label>Type d'atelier</label>
+                <select name="type_atelier" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="job_shop" {% if type_atelier_val=='job_shop' %}selected{% endif %}>Job Shop</option>
+                    <option value="flow_shop" {% if type_atelier_val=='flow_shop' %}selected{% endif %}>Flow Shop
+                    </option>
+                    <option value="parallele" {% if type_atelier_val=='parallele' %}selected{% endif %}>Machines
+                        Parallèles</option>
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label>Retard</label>
+                <select name="retard" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="en_retard" {% if retard_val=='en_retard' %}selected{% endif %}>En retard</option>
+                    <option value="a_temps" {% if retard_val=='a_temps' %}selected{% endif %}>À temps</option>
+                </select>
+            </div>
+            <div class="col-sm-3 mt-4">
+                <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-hover border">
+    <thead class="table-dark">
+        <tr>
+            <th>Nom du Job</th>
+            <th>Date d'arrivée</th>
+            <th>Setup Total (min)</th>
+            <th>Due Date</th>
+            <th>Retard Estimé (min)</th>
+            <th>Contraintes Actives</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in jobs_data %}
+        <tr>
+            <td class="fw-bold">{{ row.job.nom }}</td>
+            <td>{{ row.job.date_arrivee|date:"d/m/Y H:i" }}</td>
+            <td>{{ row.setup_total }}</td>
+            <td>{{ row.job.due_date|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if row.retard_min > 0 %}
+                <span class="text-danger fw-bold">+{{ row.retard_min }}</span>
+                {% elif row.retard_min < 0 %} <span class="text-success">{{ row.retard_min }}</span>
+                    {% else %}
+                    -
+                    {% endif %}
+            </td>
+            <td>
+                <span class="badge rounded-pill bg-warning text-dark">{{ row.contraintes_count }} contrainte(s)</span>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">Aucun job trouvé correspondant aux filtres.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

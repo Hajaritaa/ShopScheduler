@@ -1,0 +1,33 @@
+# Document de vérification - ShopScheduler
+
+L'application Django `ShopScheduler` a été entièrement générée et configurée selon les spécifications.
+
+## Modifications effectuées
+1. **Création du projet et de l'application Django** : Initialisés dans `C:\Users\hajar\.gemini\antigravity\scratch\ShopScheduler` avec `django-crispy-forms` et `bootstrap5`.
+2. **Modèles de données (`models.py`)** :
+   - `Machine`
+   - `Job`
+   - `Operation` (avec traçage `start_time` et `end_time`)
+   - `Contrainte`
+3. **Formulaires (`forms.py`)** : Créés avec `ModelForm` pour la manipulation des modèles.
+4. **Algorithmes d'ordonnancement (`scheduler.py`)** :
+   - Implémentation d'une fonction paramétrable `run_schedule(algo)` intégrant : `SPT`, `EDD`, `FIFO`, et la structure de l'algorithme de calcul `JOHNSON`.
+5. **Génération de Gantt (`gantt.py`)** :
+   - Utilisation de `plotly.express` pour simuler le calendrier.
+   - Ajout conditionnel de lignes verticales pointillées rouges aux dates limites (Due date).
+6. **Vues et interface (`views.py` et `templates/`)** :
+   - Un tableau de bord principal résumant les indicateurs clés (Makespan et Taux de Retard).
+   - CRUD visuellement propre grâce à Bootstrap 5.
+   - Page des contraintes filtrable incluant une estimation précise du retard en temps réel.
+7. **Migrations de données** : Exécutées avec succès via `sqlite3`.
+
+## Comment lancer le projet
+Ouvrez PowerShell et exécutez les commandes suivantes dans l'ordre :
+```powershell
+cd C:\Users\hajar\.gemini\antigravity\scratch\ShopScheduler
+.\venv\Scripts\activate
+python manage.py runserver
+```
+Vous pourrez ensuite visiter `http://127.0.0.1:8000/` pour accéder au Dashboard et y ajouter vos Jobs/Machines.
+
+Les affichages graphiques (Gantt) exigent d'avoir préalablement exécuté l'algorithme depuis le menu de navigation à gauche.

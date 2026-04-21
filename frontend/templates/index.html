@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Job Shop Scheduler — Application de gestion et d'ordonnancement de production industrielle" />
+  <title>Job Shop Scheduler — MES</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- frappe-gantt -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ═══════════════════════════════════════════════════════ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⚙</div>
+      <div class="sidebar-logo-text">
+        ShopScheduler
+        <span>MES v3.0</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Principal</div>
+      <div class="nav-item active" data-page="dashboard" id="nav-dashboard" onclick="App.navigate('dashboard')">
+        <span class="nav-icon">🏠</span><span>Tableau de bord</span>
+      </div>
+      <div class="nav-item" data-page="scheduler" id="nav-scheduler" onclick="App.navigate('scheduler')">
+        <span class="nav-icon">🚀</span><span>Ordonnancement</span>
+      </div>
+      <div class="nav-item" data-page="gantt" id="nav-gantt" onclick="App.navigate('gantt')">
+        <span class="nav-icon">📊</span><span>Diagramme Gantt</span>
+      </div>
+
+      <div class="sidebar-section">Données</div>
+      <div class="nav-item" data-page="jobs" id="nav-jobs" onclick="App.navigate('jobs')">
+        <span class="nav-icon">📋</span><span>Jobs</span>
+      </div>
+      <div class="nav-item" data-page="machines" id="nav-machines" onclick="App.navigate('machines')">
+        <span class="nav-icon">🏭</span><span>Machines</span>
+      </div>
+      <div class="nav-item" data-page="operations" id="nav-operations" onclick="App.navigate('operations')">
+        <span class="nav-icon">⚡</span><span>Opérations</span>
+      </div>
+
+      <div class="sidebar-section">Analyses</div>
+      <div class="nav-item" data-page="compare" id="nav-compare" onclick="App.navigate('compare')">
+        <span class="nav-icon">📈</span><span>Comparaison Algos</span>
+      </div>
+      <div class="nav-item" data-page="whatif" id="nav-whatif" onclick="App.navigate('whatif')">
+        <span class="nav-icon">🔬</span><span>Simulation What-If</span>
+      </div>
+      <div class="nav-item" data-page="history" id="nav-history" onclick="App.navigate('history')">
+        <span class="nav-icon">🕐</span><span>Historique</span>
+      </div>
+
+      <div class="sidebar-section">Système</div>
+      <div class="nav-item" data-page="alerts" id="nav-alerts" onclick="App.navigate('alerts')">
+        <span class="nav-icon">🔔</span><span>Alertes</span>
+        <span class="nav-badge hidden" id="alerts-badge">0</span>
+      </div>
+      <div class="nav-item" data-page="import" id="nav-import" onclick="App.navigate('import')">
+        <span class="nav-icon">📁</span><span>Import / Export</span>
+      </div>
+      <div class="nav-item" data-page="contraintes" id="nav-contraintes" onclick="App.navigate('contraintes')">
+        <span class="nav-icon">🔒</span><span>Contraintes</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-avatar">AD</div>
+      <div class="sidebar-footer-info">
+        <div class="sidebar-footer-name">Admin</div>
+        <div class="sidebar-footer-role">Planificateur</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════════════ MAIN CONTENT ═══ -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-breadcrumb">
+        <span>ShopScheduler</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="current" id="breadcrumb-current">Tableau de bord</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-icon" onclick="App.refreshKpis()" title="Actualiser">↻</button>
+        <button class="btn-icon" id="alerts-topbtn" onclick="App.navigate('alerts')" title="Alertes">
+          🔔
+          <span class="badge hidden" id="alerts-topbadge">0</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="App.navigate('scheduler')">
+          ▶ Ordonnancer
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════ PAGE: DASHBOARD ═══════════ -->
+    <div class="page-content active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Tableau de bord</div>
+          <div class="page-subtitle">Vue d'ensemble de la production en temps réel</div>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary btn-sm" onclick="App.exportExcel()">⬇ Export Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="App.exportPdf()">⬇ Export PDF</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Jobs</div>
+          <div class="kpi-value" id="kpi-total-jobs">—</div>
+          <div class="kpi-sub" id="kpi-jobs-sub">Chargement…</div>
+        </div>
+        <div class="kpi-card kpi-success">
+          <div class="kpi-label">Jobs Terminés</div>
+          <div class="kpi-value" id="kpi-jobs-termines">—</div>
+          <div class="kpi-sub" id="kpi-ops-sub">—</div>
+        </div>
+        <div class="kpi-card kpi-warning">
+          <div class="kpi-label">En Retard</div>
+          <div class="kpi-value" id="kpi-jobs-retard">—</div>
+          <div class="kpi-sub" id="kpi-retard-pct">—</div>
+        </div>
+        <div class="kpi-card kpi-violet">
+          <div class="kpi-label">Makespan</div>
+          <div class="kpi-value" id="kpi-makespan">—</div>
+          <div class="kpi-sub" id="kpi-algo">—</div>
+        </div>
+        <div class="kpi-card kpi-gray">
+          <div class="kpi-label">Machines Dispo</div>
+          <div class="kpi-value" id="kpi-machines">—</div>
+          <div class="kpi-sub" id="kpi-machines-sub">—</div>
+        </div>
+        <div class="kpi-card kpi-success">
+          <div class="kpi-label">Complétion Ops</div>
+          <div class="kpi-value" id="kpi-completion">—</div>
+          <div class="kpi-sub">Opérations terminées</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Statut des Jobs</span>
+          </div>
+          <div class="card-body" style="padding:16px">
+            <div class="chart-container"><canvas id="chart-jobs-status"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Utilisation des Machines</span>
+            <span class="text-muted" id="util-algo-label">—</span>
+          </div>
+          <div class="card-body" style="padding:16px">
+            <div class="chart-container"><canvas id="chart-machine-util"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jobs table summary -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Jobs récents</span>
+          <button class="btn btn-secondary btn-sm" onclick="App.navigate('jobs')">Voir tout →</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="dashboard-jobs-table">
+            <thead><tr>
+              <th>Job</th><th>Priorité</th><th>Échéance</th><th>Statut</th><th>Opérations</th><th>Durée</th>
+            </tr></thead>
+            <tbody id="dashboard-jobs-body">
+              <tr><td colspan="6" class="empty-state"><div class="spinner dark"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: SCHEDULER ═══════════ -->
+    <div class="page-content" id="page-scheduler">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ordonnancement</div>
+          <div class="page-subtitle">Sélectionner un algorithme et lancer la planification</div>
+        </div>
+      </div>
+
+      <div class="card mb-20">
+        <div class="card-header"><span class="card-title">Choisir l'algorithme</span></div>
+        <div class="card-body">
+          <div class="algo-selector" id="algo-selector">
+            <button class="algo-btn selected" data-algo="spt" onclick="Scheduler.selectAlgo('spt', this)">
+              ⚡ SPT <span style="font-weight:400;font-size:11px;display:block;color:var(--text-muted)">Shortest Processing</span>
+            </button>
+            <button class="algo-btn" data-algo="lpt" onclick="Scheduler.selectAlgo('lpt', this)">
+              🔼 LPT <span style="font-weight:400;font-size:11px;display:block;color:var(--text-muted)">Longest Processing</span>
+            </button>
+            <button class="algo-btn" data-algo="edd" onclick="Scheduler.selectAlgo('edd', this)">
+              📅 EDD <span style="font-weight:400;font-size:11px;display:block;color:var(--text-muted)">Earliest Due Date</span>
+            </button>
+            <button class="algo-btn genetic" data-algo="genetic" onclick="Scheduler.selectAlgo('genetic', this)">
+              🧬 Génétique <span style="font-weight:400;font-size:11px;display:block;color:var(--text-muted)">Algorithme évolutif</span>
+            </button>
+          </div>
+          <div style="margin-top:20px">
+            <button class="btn btn-primary" id="btn-run-schedule" onclick="Scheduler.run()">
+              ▶ Lancer l'ordonnancement
+            </button>
+            <span id="schedule-status" style="margin-left:12px;font-size:13px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule Results -->
+      <div id="schedule-results" class="hidden">
+        <div class="kpi-grid" style="margin-bottom:20px">
+          <div class="kpi-card kpi-violet">
+            <div class="kpi-label">Makespan</div>
+            <div class="kpi-value" id="sched-makespan">—</div>
+            <div class="kpi-sub">minutes</div>
+          </div>
+          <div class="kpi-card kpi-warning">
+            <div class="kpi-label">Taux de Retard</div>
+            <div class="kpi-value" id="sched-retard">—</div>
+            <div class="kpi-sub">des jobs avec échéance</div>
+          </div>
+          <div class="kpi-card kpi-success">
+            <div class="kpi-label">Algorithme</div>
+            <div class="kpi-value" id="sched-algo" style="font-size:20px">—</div>
+            <div class="kpi-sub">utilisé</div>
+          </div>
+        </div>
+
+        <div class="card mb-20">
+          <div class="card-header">
+            <span class="card-title">Gantt — Résultat</span>
+            <div class="flex gap-8">
+              <button class="btn btn-secondary btn-sm" onclick="App.navigate('gantt')">Voir Gantt complet →</button>
+            </div>
+          </div>
+          <div id="sched-gantt-container" style="padding:16px;overflow-x:auto;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Séquence planifiée</span></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Job</th><th>Machine</th><th>Début (min)</th><th>Fin (min)</th><th>Durée</th></tr></thead>
+              <tbody id="schedule-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: GANTT ════════════════ -->
+    <div class="page-content" id="page-gantt">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Diagramme de Gantt</div>
+          <div class="page-subtitle">Visualisation interactive du planning</div>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary btn-sm" onclick="GanttView.zoomIn()">🔍+ Zoom +</button>
+          <button class="btn btn-secondary btn-sm" onclick="GanttView.zoomOut()">🔍- Zoom −</button>
+          <button class="btn btn-secondary btn-sm" onclick="GanttView.exportPng()">📷 PNG</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="gantt-toolbar">
+          <span class="text-muted" style="font-size:12px">Planning :</span>
+          <select class="form-control" style="width:220px;padding:4px 8px;font-size:13px" id="gantt-planning-select" onchange="GanttView.loadPlanning(this.value)">
+            <option value="">— Sélectionner un planning —</option>
+          </select>
+          <select class="form-control" style="width:140px;padding:4px 8px;font-size:13px" id="gantt-view-mode" onchange="GanttView.changeMode(this.value)">
+            <option value="Hour">Heure</option>
+            <option value="Quarter Day">Quart journée</option>
+            <option value="Half Day">Demi-journée</option>
+            <option value="Day" selected>Journée</option>
+            <option value="Week">Semaine</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="GanttView.resetView()">⟳ Réinitialiser</button>
+        </div>
+        <div class="gantt-container" id="gantt-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-title">Aucun planning chargé</div>
+            <div class="empty-state-text">Lancez un ordonnancement puis revenez ici.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: JOBS ═════════════════ -->
+    <div class="page-content" id="page-jobs">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Jobs de Production</div>
+          <div class="page-subtitle">Gestion des ordres de fabrication</div>
+        </div>
+        <button class="btn btn-primary" onclick="JobsCRUD.openCreate()">+ Nouveau Job</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="jobs-count">Jobs (0)</span>
+          <input type="text" class="form-control" style="width:240px;padding:6px 12px" placeholder="🔍 Rechercher…" id="jobs-search" oninput="JobsCRUD.search(this.value)" />
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Nom</th><th>Priorité</th><th>Échéance</th>
+              <th>Statut</th><th>Opérations</th><th>Durée (min)</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="jobs-table-body">
+              <tr><td colspan="8"><div class="empty-state"><div class="spinner dark"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: MACHINES ════════════ -->
+    <div class="page-content" id="page-machines">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Machines</div>
+          <div class="page-subtitle">Parc machines et capacités</div>
+        </div>
+        <button class="btn btn-primary" onclick="MachinesCRUD.openCreate()">+ Nouvelle Machine</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="machines-count">Machines (0)</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Nom</th><th>Type</th><th>Capacité</th>
+              <th>Statut</th><th>Setup (min)</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="machines-table-body">
+              <tr><td colspan="7"><div class="empty-state"><div class="spinner dark"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: OPERATIONS ══════════ -->
+    <div class="page-content" id="page-operations">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Opérations</div>
+          <div class="page-subtitle">Séquences opératoires par job</div>
+        </div>
+        <button class="btn btn-primary" onclick="OperationsCRUD.openCreate()">+ Nouvelle Opération</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="ops-count">Opérations (0)</span>
+          <select class="form-control" style="width:200px;padding:6px 8px;font-size:13px" id="ops-filter-job" onchange="OperationsCRUD.filterByJob(this.value)">
+            <option value="">Tous les jobs</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Job</th><th>Machine</th><th>Ordre</th>
+              <th>Durée (min)</th><th>Statut</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="ops-table-body">
+              <tr><td colspan="7"><div class="empty-state"><div class="spinner dark"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: COMPARE ═════════════ -->
+    <div class="page-content" id="page-compare">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Comparaison des Algorithmes</div>
+          <div class="page-subtitle">Performance comparative : SPT, LPT, EDD, Génétique</div>
+        </div>
+        <button class="btn btn-primary" onclick="Compare.run()">▶ Lancer la comparaison</button>
+      </div>
+
+      <div id="compare-loading" class="hidden" style="text-align:center;padding:40px">
+        <div class="spinner dark" style="width:32px;height:32px;margin:0 auto 12px"></div>
+        <div class="text-muted">Calcul des 4 algorithmes en cours…</div>
+      </div>
+
+      <div id="compare-results" class="hidden">
+        <div class="charts-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Makespan par algorithme (min)</span></div>
+            <div class="card-body" style="padding:16px">
+              <div class="chart-container"><canvas id="chart-compare-makespan"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Taux de retard (%)</span></div>
+            <div class="card-body" style="padding:16px">
+              <div class="chart-container"><canvas id="chart-compare-retard"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-20">
+          <div class="card-header"><span class="card-title">Radar — Performance globale</span></div>
+          <div class="card-body" style="padding:16px;display:flex;justify-content:center">
+            <div style="width:360px;height:320px"><canvas id="chart-compare-radar"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card mt-20">
+          <div class="card-header"><span class="card-title">Tableau comparatif</span></div>
+          <div class="table-wrapper">
+            <table id="compare-table">
+              <thead><tr><th>Algorithme</th><th>Makespan (min)</th><th>Taux Retard (%)</th><th>Utilisation Moy. (%)</th><th>Recommandé</th></tr></thead>
+              <tbody id="compare-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: WHATIF ══════════════ -->
+    <div class="page-content" id="page-whatif">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Simulation What-If</div>
+          <div class="page-subtitle">Modifiez les durées et recalculez instantanément</div>
+        </div>
+      </div>
+
+      <div class="form-row" style="align-items:start">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Paramètres de simulation</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Algorithme</label>
+              <select class="form-control" id="whatif-algo">
+                <option value="spt">SPT — Shortest Processing Time</option>
+                <option value="lpt">LPT — Longest Processing Time</option>
+                <option value="edd">EDD — Earliest Due Date</option>
+                <option value="genetic">Génétique</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Modifier les durées des opérations</label>
+              <div id="whatif-ops-list">
+                <div class="text-muted">Chargement…</div>
+              </div>
+            </div>
+            <button class="btn btn-violet w-full mt-16" onclick="WhatIf.simulate()">🔬 Simuler</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-16">
+            <div class="card-header"><span class="card-title">Résultats de simulation</span></div>
+            <div class="card-body">
+              <div id="whatif-empty" class="empty-state" style="padding:24px">
+                <div class="empty-state-icon">🔬</div>
+                <div class="empty-state-text">Lancez une simulation pour voir les résultats</div>
+              </div>
+              <div id="whatif-results" class="hidden">
+                <div class="whatif-results">
+                  <div class="whatif-result-item">
+                    <div class="whatif-result-value" id="whatif-makespan">—</div>
+                    <div class="whatif-result-label">Makespan (min)</div>
+                  </div>
+                  <div class="whatif-result-item">
+                    <div class="whatif-result-value" id="whatif-retard" style="color:var(--warning)">—</div>
+                    <div class="whatif-result-label">Taux retard (%)</div>
+                  </div>
+                  <div class="whatif-result-item">
+                    <div class="whatif-result-value" id="whatif-util" style="color:var(--success)">—</div>
+                    <div class="whatif-result-label">Util. moy. (%)</div>
+                  </div>
+                </div>
+                <div class="mt-16 text-muted" style="font-size:11px;text-align:center">⚠ Simulation uniquement — aucune modification sauvegardée</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="whatif-gantt-card" style="display:none">
+            <div class="card-header"><span class="card-title">Gantt simulé</span></div>
+            <div id="whatif-gantt" style="padding:12px;overflow-x:auto;min-height:120px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: HISTORY ═════════════ -->
+    <div class="page-content" id="page-history">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Historique des Plannings</div>
+          <div class="page-subtitle">Plannings générés par algorithme</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="history-count">Plannings (0)</span></div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Nom</th><th>Algorithme</th><th>Makespan (min)</th>
+              <th>Taux Retard</th><th>Date</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="history-table-body">
+              <tr><td colspan="7"><div class="empty-state"><div class="spinner dark"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: ALERTS ══════════════ -->
+    <div class="page-content" id="page-alerts">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Centre d'Alertes</div>
+          <div class="page-subtitle">Retards, surcharges et notifications système</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="AlertsPage.readAll()">✓ Tout marquer lu</button>
+      </div>
+
+      <div class="card">
+        <div id="alerts-list">
+          <div class="empty-state"><div class="spinner dark"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: IMPORT ══════════════ -->
+    <div class="page-content" id="page-import">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Import / Export</div>
+          <div class="page-subtitle">Importer des données CSV, exporter en Excel ou PDF</div>
+        </div>
+      </div>
+
+      <div class="form-row" style="align-items:start;gap:20px">
+        <!-- Import CSV -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">📁 Import CSV — Jobs</span></div>
+          <div class="card-body">
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file-input').click()">
+              <div class="drop-zone-icon">📄</div>
+              <div class="drop-zone-text">Cliquer ou glisser-déposer un fichier CSV</div>
+              <div class="drop-zone-hint">Format : nom, priorite, date_due, statut</div>
+            </div>
+            <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="ImportExport.handleFile(this.files[0])" />
+            <div id="import-result" class="mt-16 hidden"></div>
+            <div class="mt-16" style="background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--border)">
+              <div class="font-600" style="font-size:12px;margin-bottom:8px">Exemple de format CSV :</div>
+              <code style="font-size:11px;color:var(--text-muted);display:block;line-height:1.8">
+                nom,priorite,date_due,statut<br>
+                Pièce turbine X,3,2026-05-15,en_attente<br>
+                Rotor moteur Y,4,2026-05-10,en_attente
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export -->
+        <div>
+          <div class="card mb-16">
+            <div class="card-header"><span class="card-title">⬇ Export Excel</span></div>
+            <div class="card-body">
+              <p class="text-muted mb-16">Exporter jobs, machines, opérations et plannings dans un classeur Excel (.xlsx) avec mise en forme.</p>
+              <button class="btn btn-success w-full" onclick="App.exportExcel()">⬇ Télécharger Excel</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">📄 Export PDF</span></div>
+            <div class="card-body">
+              <p class="text-muted mb-16">Générer un rapport PDF complet avec tableaux et récapitulatif des plannings.</p>
+              <button class="btn btn-danger w-full" onclick="App.exportPdf()">📄 Télécharger PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ PAGE: CONTRAINTES ══════════ -->
+    <div class="page-content" id="page-contraintes">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Contraintes</div>
+          <div class="page-subtitle">Règles métier de l'ordonnancement</div>
+        </div>
+        <button class="btn btn-primary" onclick="ContraintesCRUD.openCreate()">+ Ajouter</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>Type</th><th>Valeur</th><th>Description</th><th>Actions</th></tr></thead>
+            <tbody id="contraintes-table-body">
+              <tr><td colspan="5"><div class="empty-state"><div class="spinner dark"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ══════════════════════════════════════════════════ MODALS ════════════ -->
+
+<!-- Modal Job -->
+<div class="modal-overlay" id="modal-job">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-job-title">Nouveau Job</div>
+      <button class="modal-close" onclick="JobsCRUD.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="job-id" />
+      <div class="form-group">
+        <label class="form-label">Nom du job *</label>
+        <input type="text" class="form-control" id="job-nom" placeholder="Ex: Pièce Moteur A320" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Priorité</label>
+          <select class="form-control" id="job-priorite">
+            <option value="1">1 — Basse</option>
+            <option value="2" selected>2 — Normale</option>
+            <option value="3">3 — Haute</option>
+            <option value="4">4 — Critique</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-control" id="job-statut">
+            <option value="en_attente">En attente</option>
+            <option value="en_cours">En cours</option>
+            <option value="terminé">Terminé</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date d'échéance</label>
+        <input type="datetime-local" class="form-control" id="job-date-due" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="JobsCRUD.closeModal()">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-job" onclick="JobsCRUD.save()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Machine -->
+<div class="modal-overlay" id="modal-machine">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-machine-title">Nouvelle Machine</div>
+      <button class="modal-close" onclick="MachinesCRUD.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="machine-id" />
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input type="text" class="form-control" id="machine-nom" placeholder="Ex: CNC Alpha" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-control" id="machine-type">
+            <option value="standard">Standard</option>
+            <option value="CNC">CNC</option>
+            <option value="robot">Robot</option>
+            <option value="assemblage">Assemblage</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-control" id="machine-statut">
+            <option value="disponible">Disponible</option>
+            <option value="occupée">Occupée</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Capacité</label>
+          <input type="number" class="form-control" id="machine-capacite" value="1" min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Temps Setup (min)</label>
+          <input type="number" class="form-control" id="machine-setup" value="0" min="0" step="0.5" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="MachinesCRUD.closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="MachinesCRUD.save()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Operation -->
+<div class="modal-overlay" id="modal-operation">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-op-title">Nouvelle Opération</div>
+      <button class="modal-close" onclick="OperationsCRUD.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="op-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Job *</label>
+          <select class="form-control" id="op-job-id"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Machine *</label>
+          <select class="form-control" id="op-machine-id"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Durée (min) *</label>
+          <input type="number" class="form-control" id="op-duree" value="30" min="1" step="0.5" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ordre</label>
+          <input type="number" class="form-control" id="op-ordre" value="1" min="1" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Statut</label>
+        <select class="form-control" id="op-statut">
+          <option value="en_attente">En attente</option>
+          <option value="en_cours">En cours</option>
+          <option value="terminé">Terminé</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="OperationsCRUD.closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="OperationsCRUD.save()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Contrainte -->
+<div class="modal-overlay" id="modal-contrainte">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouvelle Contrainte</div>
+      <button class="modal-close" onclick="ContraintesCRUD.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-control" id="contrainte-type">
+          <option value="priorité">Priorité</option>
+          <option value="délai">Délai</option>
+          <option value="machine">Machine</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valeur</label>
+        <input type="text" class="form-control" id="contrainte-valeur" placeholder="Ex: 72h, Critique, CNC Alpha…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="contrainte-desc" rows="3" placeholder="Décrivez la contrainte…" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="ContraintesCRUD.closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="ContraintesCRUD.save()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Confirmer la suppression</div>
+      <button class="modal-close" onclick="App.closeConfirm()">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message">Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="App.closeConfirm()">Annuler</button>
+      <button class="btn btn-danger" id="btn-confirm-delete" onclick="App.executeConfirm()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/crud.js"></script>
+<script src="/static/js/gantt_view.js"></script>
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/whatif.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - ShopScheduler{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">KPIs de l'Atelier</h2>
+
+    <div class="row g-4">
+        <!-- KPI: Nombre de Jobs -->
+        <div class="col-md-3">
+            <div class="card text-bg-primary shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Jobs Actifs</h5>
+                    <p class="card-text display-4">{{ nb_jobs }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: Nombre de Machines -->
+        <div class="col-md-3">
+            <div class="card text-bg-secondary shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Machines</h5>
+                    <p class="card-text display-4">{{ nb_machines }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: Makespan Moyen -->
+        <div class="col-md-3">
+            <div class="card text-bg-success shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Makespan Global</h5>
+                    <p class="card-text display-4">{{ makespan_moyen }} <small class="fs-6">min</small></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: Taux de Retard -->
+        <div class="col-md-3">
+            <div class="card text-bg-{% if taux_retard > 0 %}danger{% else %}success{% endif %} shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Taux de Retard</h5>
+                    <p class="card-text display-4">{{ taux_retard }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
